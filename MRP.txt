@@ -1,0 +1,108 @@
+﻿--Consultar Version--
+SELECT * FROM version()
+
+--Secuencias--
+CREATE SEQUENCE estadias_id_seq
+  INCREMENT 1
+  MINVALUE 1
+  MAXVALUE 9223372036854775807
+  START 1
+  CACHE 1;
+ALTER TABLE estadias_id_seq
+  OWNER TO postgres;
+
+
+--Crear Tablas--
+CREATE TABLE usuarios
+(
+  id INTEGER NOT NULL DEFAULT nextval('estadias_id_seq'::regclass),
+  usuario TEXT NOT NULL,
+  estatus integer NOT NULL,
+  universidad TEXT NOT NULL
+)
+WITHOUT OIDS;
+ALTER TABLE administrador
+  OWNER TO sistema;
+
+--ANTES DE CREAR TABLA 
+--CREAR SECUENCIA
+
+SELECT * FROM usuarios
+
+INSERT INTO usuarios (usuario,estatus,universidad) VALUES ('Jonny Doe',1,'Anon')
+INSERT INTO usuarios (usuario,estatus,universidad) VALUES ('Doe',1,'Anon')
+
+
+--CREACION DE VISTAS
+SELECT * FROM usuarios limit 10 -- Usar limites
+
+
+EXPLAIN --Explain función
+
+CREATE OR REPLACE VIEW view_inv_usuarios AS
+SELECT usuario::TEXT,cta_ord AS CuentaOrd ,inver.respuesta,users.nombre::TEXT  
+	FROM bit_inv AS inver 
+        JOIN usuarios AS users USING(usuario)
+
+ --usuario ()
+SELECT *  FROM bit_inv AS inver 
+        JOIN usuarios as users USING(usuario)
+
+
+
+--Optimisado por VACCUMM
+VACUUM VERBOSE ANALYZE bit_inv
+VACUUM VERBOSE ANALYZE usuarios
+
+--CFREACION DEL INDICE TABLA DE USUARIOS Y TABLA DE BIT_INV
+--CREATE INDEX FOR usuariois
+CREATE INDEX cliente_pkindex
+  ON usuarios
+ USING btree
+ (usuario);
+
+CREATE INDEX clienteinv_pkindex
+  ON bit_inv
+ USING btree
+ (usuario);
+
+
+SELECT * FROM view_inv_usuarios ORDER BY nombre DESC
+LIMIT 10
+
+--FUNCIONES
+SELECT * FROM version()
+
+CREATE OR REPLACE FUNCTION sps_inv() 
+RETURNS TABLE (usuario TEXT,cuord TEXT,repuesta TEXT,nombre TEXT) AS
+$BODY$
+DECLARE
+
+--BLOQUE PARA DECLARAR LAS VARIABLES QUE NECESITEMOS
+     r		inv_type%rowtype; --VA A RETORNAR UN TYPW
+    		
+BEGIN
+	FOR R IN
+		SELECT * FROM view_inv_usuarios ORDER BY nombre DESC 	
+	LOOP
+		usuario = r.usuario;
+		cuord = r.cuord;
+		repuesta = r.repuesta;
+		nombre = r.nombre;		
+			RETURN;
+		END LOOP;
+	RETURN;
+END
+
+$BODY$
+  LANGUAGE plpgsql VOLATILE SECURITY DEFINER;
+ALTER FUNCTION sps_inv()
+  OWNER TO postgres;
+
+SELECT * FROM sps_inv()
+
+
+--ANTES DE CREAR LA FUNCION DEBES DE CREAR TYPE
+CREATE TYPE inv_type AS
+
+
